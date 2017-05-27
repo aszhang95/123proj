@@ -22,17 +22,12 @@ class MRFindInactiveUsers(MRJob):
     def inactive_user_combiner(self, user, count):
 
         yield user, sum(count)
-    
-    def inactive_user_reducer(self, user, count):
-
-        if count < 5:
-            yield user, None
 
     def reducer_init(self):
 
         self.inactive_user_list = []
 
-    def reducer(self, user, count):
+    def inactive_user_reducer(self, user, count):
 
         if sum(count) < 5:
             self.inactive_user_list.append(user)
