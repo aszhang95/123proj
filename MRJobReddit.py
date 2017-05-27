@@ -1,6 +1,8 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import spacy
+import sys
+import csv
 
 nlp = spacy.load('en')
 
@@ -8,9 +10,11 @@ class MRFindInactiveUsers(MRJob):
 
     def inactive_user_mapper(self, _, comment):
 
-        user = comment[3]
-        text = comment[0]
-        yield user, 1
+        comment_info = [x.strip() for x in comment_info.split(',')]
+        comment = ''.join(comment_info[:-20])
+        username = comment_info[-17]
+        if username != '[deleted]':
+            yield username, 1
     
     def inactive_user_combiner(self, user, count):
 
@@ -45,14 +49,33 @@ class MRFindInactiveUsers(MRJob):
 
 inactive_user_list = MRFindInactiveUsers.run()
 
-class GetUniquePairs(MRJob):
+def get_sentences(csv_filename,inactive_user_list):
 
-    def mapper(self, _, comment):
+    comments = open(csv_filename)
+    comments = comments.readlines()
+    list_of_sentences = []
 
-        user = comment[3]
-        text = comment[0]
-        doc = nlp(text)
-        for sentence in nlp.sentences(doc):
-            yield user, sentence
+    for comment_info in comments:
+        comment_info = [x.strip() for x in comment_info.split(',')]
+        comment = ''.join(comment_info[:-20])
+        username = comment_info[-17]
+        if username != '[deleted]':
+            doc = nlp(comment)
+            for sentence in doc.sents:
+                list_of_sentences.append(sentence)
 
-    def 
+    return list_of_sentences
+
+def make_sentence_pairs(list_of_sentences):
+    '''   
+    [(username, sentence), (username, sentence), (...,...),...]
+    '''
+
+    with open("output.csv",'wb') as f:
+        writer = csv.writer(f, dialect='excel')
+        for sentence1 in list_of_sentences:
+            for sentence2 in list_of_sentences:
+                if sentence1[0] != '[deleted]' and sentence2[0] != '[deleted]':
+                    if sentence1[0] != sentence2[0]:
+                        writer.writerow([sentence1[0], sentence1[1], sentence2[0], sentence2[1]])
+
