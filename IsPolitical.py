@@ -5,6 +5,10 @@ from wikidataintegrator import wdi_core
 import spacy
 from SPARQLWrapper import SPARQLWrapper, JSON
 
+nlp = spacy.load('en')
+list_of_named_entity_labels=['PERSON', 'NORP', 'ORG', 'GPE', 'LOC', 'EVENT', 'WORK_OF_ART', 'LANGUAGE']
+list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President'...add more words...]
+
 ''' EXAMPLE ROW:
 {
     "body": "The Lump of Labor fallacy is that the amount of labor required is FIXED.  Saying that technology increases productivity faster than the demand for new labor is created does not make that assumption.  \n\nThis is the same reason increasing minimum wage actually works, the increase in wage overtakes the increase to cost of living over the short to medium term.",
@@ -29,58 +33,41 @@ from SPARQLWrapper import SPARQLWrapper, JSON
     "author_flair_css_class": null
   } '''
 
-my_first_wikidata_item = wdi_core.WDItemEngine(wd_item_id='Q5')
-
 class IsPolitical(MRJob):
-        list_of_named_entity_labels=['PERSON', 'NORP', 'ORG', 'GPE', 'LOC', 'EVENT', 'WORK_OF_ART', 'LANGUAGE']
-        list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President']
+
     def mapper(self, _, line):
         '''
         output: entity, boolean (true if political, false if non-political)
         '''
+        line = line.split(',')
         #SPACY: determine named entities in comment
-    	user=line[4]
-        comment=line[0]
-        nlp = spacy.load('en')
+    	user=line[-17]
+        comment=line[-20]
         doc = nlp(unicode(comment)) #doc = nlp(u'London is a big city in the United Kingdom.')
+        score = sids_function(comment)
         for ent in doc.ents:
             if ent.label_ in list_of_named_entity_labels:
-                #send entity to SPARQL
-                #if entity in list_of_political_words
+                if IsPoliticalSidsAPI(ent):
+                    yield True, (score, 1)
+                if not IsPoliticalSidsAPI(ent):
+                    yield False, (score, 1)
+#still need to figure out how to perform stddev on the two yields
 
-        #https://www.wikidata.org/wiki/Wikidata:A_beginner-friendly_course_for_SPARQL#Properties_of_the_object_.28Relative_Clauses.29
-        #control find 'description'
-        sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-        sparql.setQuery("""
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            SELECT ?label
-            WHERE { <http://dbpedia.org/resource/Asturias> rdfs:label ?label }
-        """)
-        SELECT ?item ?itemLabel
-WHERE
-{
-    ?item wdt:P31 wd:Q146 .
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
-}
-        sparql.setReturnFormat(JSON)
-        results = sparql.query().convert()
+    def combiner(self, is_political, score_count):
+        yield is_political, score_count
+#check this. does combiner need to perform a function always?
 
-        for result in results["results"]["bindings"]:
-            print(result["label"]["value"])
+    def reducer_init(self):
+        self.sum = 0
+        self.n = 0
+        self.mean = self.sum/self.n
+        self.sum_ex = 0
+        self.sum_ex2 = 0
 
-        #given a named entity, search wikidata to figure out if political. if it is, output ID(unique ID per entitiy. i.e. Trump, Donald Trump) and word
-        #subreddit:
-        for score in scores:
-        	#score is a tuple (entity, score)
-        	yield user, score
+    def reducer(self, guest, score_count):
+        for score, count in zip(score_count): #check this zip too. can zip take in generator types?
+            self.sum_ex += score
+            self.count += n
 
-    def combiner(self, guest, visits):
-        yield guest, sum(visits)
-    
-    def reducer(self, guest, total_visits):
-        if sum(total_visits) >= 10:
-            yield guest, None
-
-if __name__ == '__main__':
-  MRGuestFrequent.run()
-  
+    def reducer_final(self):
+        yield ((self.sum_ex2-((self.sum_ex) ** 2)/self.n)/self.n - 1, None) #https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
