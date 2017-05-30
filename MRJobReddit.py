@@ -1,6 +1,5 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-from mrjob.protocol import PickleProtocol
 #import spacy
 import sys
 import csv
@@ -9,12 +8,9 @@ from functools import reduce
 import operator
 
 #nlp = spacy.load('en')
-inactive_user_list1 = []
+inactive_user_list = []
 
 class MRFindInactiveUsers(MRJob):
-
-    #INPUT_PROTOCOL = PickleProtocol
-    #OUTPUT_PROTOCOL = PickleProtocol
 
     def inactive_user_mapper(self, _, comment):
         print(comment)
@@ -54,8 +50,11 @@ class MRFindInactiveUsers(MRJob):
 if __name__ == '__main__':
     MRFindInactiveUsers.run()
 
-'''
-inactive_user_list = MRFindInactiveUsers.run()
+    list_of_sentences = get_sentences(csv_filename, inactive_user_list)
+
+    make_sentence_pairs(list_of_sentences)
+
+    #Then use another MRJOB class to do the Matrix 
 
 def get_sentences(csv_filename,inactive_user_list):
 
@@ -79,7 +78,6 @@ def make_sentence_pairs(list_of_sentences):
     
     [(username, sentence), (username, sentence), (...,...),...]
     
-
     with open("output.csv",'wb') as f:
         writer = csv.writer(f, dialect='excel')
         for sentence1 in list_of_sentences:
@@ -90,7 +88,6 @@ def make_sentence_pairs(list_of_sentences):
 
 
 class MRUserbyUserMatrix(MRJob):
-
     
     n = unique_users
     
@@ -114,7 +111,10 @@ class MRUserbyUserMatrix(MRJob):
             self.user_dict[sentence2_user] = current_dict_location
             current_dict_location += 1
 
-        sentiment_score = sentiment_calculator(sentence1, sentence2)
+        sentence1nlp = nlp(sentence1)
+        sentence2nlp = nlp(sentence2)
+
+        sentiment_score = sentiment_calculator(sentence1nlp, sentence2nlp)
 
         yield (sentence1_user, sentence2_user), sentiment_score
         yield (sentence2_user, sentence1_user), sentiment_score        
@@ -147,6 +147,7 @@ class MRUserbyUserMatrix(MRJob):
                  reducer=self.inactive_user_reducer,
                  reducer_final=self.reducer_final)
 
+'''
 sudo apt install gcc
 sudo apt-get install --reinstall make
 sudo make install
