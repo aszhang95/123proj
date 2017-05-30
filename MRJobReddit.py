@@ -1,16 +1,25 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-#import spacy
+import spacy
 import sys
 import csv
 import numpy as np
 from functools import reduce
 import operator
+from mr3px.csvprotocol import CsvProtocol
 
-#nlp = spacy.load('en')
-inactive_user_list = []
+nlp = spacy.load('en')
+#pip install mr3px
+#https://stackoverflow.com/questions/31032885/mrjob-and-python-csv-file-output-for-reducer/31331870#31331870
+#https://pypi.python.org/pypi/mr3px
 
 class MRFindInactiveUsers(MRJob):
+    '''
+    This will yield the inactive users (less than 5 comments) into a csv file
+    as user, None
+    ''' 
+
+    OUTPUT_PROTOCOL = CsvProtocol  # write output as CSV
 
     def inactive_user_mapper(self, _, comment):
         print(comment)
@@ -24,18 +33,10 @@ class MRFindInactiveUsers(MRJob):
 
         yield user, sum(count)
 
-    def reducer_init(self):
-
-        self.inactive_user_list = []
-
     def inactive_user_reducer(self, user, count):
 
         if sum(count) < 5:
-            self.inactive_user_list.append(user)
-
-    def reducer_final(self):
-
-        yield self.inactive_user_list, None
+            yield (None, user)
 
     def steps(self):
 
@@ -43,21 +44,30 @@ class MRFindInactiveUsers(MRJob):
           MRStep(
                  mapper=self.inactive_user_mapper,
                  combiner=self.inactive_user_combiner,
-                 reducer_init=self.reducer_init,
-                 reducer=self.inactive_user_reducer,
-                 reducer_final=self.reducer_final)]
+                 reducer=self.inactive_user_reducer)]
 
 if __name__ == '__main__':
     MRFindInactiveUsers.run()
 
-    list_of_sentences = get_sentences(csv_filename, inactive_user_list)
+def CSVtoList(csv_filename):
+    '''
+    This gets the csv file of inactive users and returns them in a list form
+    '''
+    inactive = open(csv_filename)
+    inactive = inactive.readlines()
+    inactive_user_list = []
+    for x, user in inactive:
+        inactive_user_list.append(user)
 
-    make_sentence_pairs(list_of_sentences)
-
-    #Then use another MRJOB class to do the Matrix 
+    return inactive_user_list
 
 def get_sentences(csv_filename,inactive_user_list):
+    '''
+    This takes the reddit csv file and returns a list of all the sentences with its user
 
+    Returns:
+        List of this format --> [(username, sentence), (username, sentence), (...,...),...]
+    '''
     comments = open(csv_filename)
     comments = comments.readlines()
     list_of_sentences = []
@@ -75,9 +85,17 @@ def get_sentences(csv_filename,inactive_user_list):
     return list_of_sentences
 
 def make_sentence_pairs(list_of_sentences):
-    
-    [(username, sentence), (username, sentence), (...,...),...]
-    
+    '''
+    Takes a list of all sentences and its user and creates a csv that 
+    has every possible pair of sentences.
+
+    Input:
+        List of this format --> [(username, sentence), (username, sentence), (...,...),...]
+   
+    Returns:
+        Csv with this format --> sentence 1, user of sentence 1, sentence 2, user of sentence 2
+    '''
+
     with open("output.csv",'wb') as f:
         writer = csv.writer(f, dialect='excel')
         for sentence1 in list_of_sentences:
@@ -88,9 +106,19 @@ def make_sentence_pairs(list_of_sentences):
 
 
 class MRUserbyUserMatrix(MRJob):
-    
-    n = unique_users
-    
+    '''
+    Takes the csv with sentence pairs and creates a csv that gives the 
+    location of the matrix and the similarity score that should be put there
+
+    Input:
+        csv file with each line like --> sentence 1, user of sentence 1, sentence 2, user of sentence 2
+
+    Output:
+        csv file with each line like --> (x coordinate of matrix, y coordinate of matrix), similarity score
+    '''
+
+    OUTPUT_PROTOCOL = CsvProtocol  # write output as CSV
+
     def mapper_init(self):
 
         current_dict_location = 0
@@ -114,28 +142,20 @@ class MRUserbyUserMatrix(MRJob):
         sentence1nlp = nlp(sentence1)
         sentence2nlp = nlp(sentence2)
 
-        sentiment_score = sentiment_calculator(sentence1nlp, sentence2nlp)
+        similiarity_score = sentiment_calculator(sentence1nlp, sentence2nlp)
 
-        yield (sentence1_user, sentence2_user), sentiment_score
-        yield (sentence2_user, sentence1_user), sentiment_score        
+        yield (sentence1_user, sentence2_user), similarity_score
+        yield (sentence2_user, sentence1_user), similarity_score        
 
     def combiner(self, users, scores):
 
         yield users, reduce(operator.mul, (scores), 1)
-
-    def reducer_init(self):
-
-        self.user_score_matrix = np.zeros((n*n))
     
-    def reducer(self, user, count):
+    def reducer(self, user, scores):
 
         user_row_index = self.user_dict[user[0]]
         user_col_index = self.user_dict[user[1]]
-        self.user_score_matrix[user_row_index, user_col_index] = count
-
-    def reducer_final(self):
-
-        yield self.user_score_matrix, None
+        yield (self.user_dict[user[0]], self.user_dict[user[1]]), reduce(operator.mul, (scores), 1)
 
     def steps(self):
 
@@ -143,12 +163,4 @@ class MRUserbyUserMatrix(MRJob):
           MRStep(mapper_init=self.mapper_init,
                  mapper=self.inactive_user_mapper,
                  combiner=self.inactive_user_combiner,
-                 reducer_init=self.reducer_init,
-                 reducer=self.inactive_user_reducer,
-                 reducer_final=self.reducer_final)
-
-'''
-sudo apt install gcc
-sudo apt-get install --reinstall make
-sudo make install
-'''
+                 reducer=self.inactive_user_reducer)]
