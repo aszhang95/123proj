@@ -1,19 +1,24 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-import spacy
+from mrjob.protocol import PickleProtocol
+#import spacy
 import sys
 import csv
 import numpy as np
 from functools import reduce
 import operator
 
-nlp = spacy.load('en')
+#nlp = spacy.load('en')
+inactive_user_list1 = []
 
 class MRFindInactiveUsers(MRJob):
 
-    def inactive_user_mapper(self, _, comment):
+    #INPUT_PROTOCOL = PickleProtocol
+    #OUTPUT_PROTOCOL = PickleProtocol
 
-        comment_info = [x.strip() for x in comment_info.split(',')]
+    def inactive_user_mapper(self, _, comment):
+        print(comment)
+        comment_info = [x.strip() for x in comment.split(',')]
         comment = ''.join(comment_info[:-20])
         username = comment_info[-17]
         if username != '[deleted]':
@@ -44,8 +49,12 @@ class MRFindInactiveUsers(MRJob):
                  combiner=self.inactive_user_combiner,
                  reducer_init=self.reducer_init,
                  reducer=self.inactive_user_reducer,
-                 reducer_final=self.reducer_final)
+                 reducer_final=self.reducer_final)]
 
+if __name__ == '__main__':
+    MRFindInactiveUsers.run()
+
+'''
 inactive_user_list = MRFindInactiveUsers.run()
 
 def get_sentences(csv_filename,inactive_user_list):
@@ -59,16 +68,17 @@ def get_sentences(csv_filename,inactive_user_list):
         comment = ''.join(comment_info[:-20])
         username = comment_info[-17]
         if username != '[deleted]':
-            doc = nlp(comment)
-            for sentence in doc.sents:
-                list_of_sentences.append((username, str(sentence)))
+            if username not in inactive_user_list:
+                doc = nlp(comment)
+                for sentence in doc.sents:
+                    list_of_sentences.append((username, str(sentence)))
 
     return list_of_sentences
 
 def make_sentence_pairs(list_of_sentences):
-    '''   
+    
     [(username, sentence), (username, sentence), (...,...),...]
-    '''
+    
 
     with open("output.csv",'wb') as f:
         writer = csv.writer(f, dialect='excel')
@@ -81,9 +91,9 @@ def make_sentence_pairs(list_of_sentences):
 
 class MRUserbyUserMatrix(MRJob):
 
-    '''
+    
     n = unique_users
-    '''
+    
     def mapper_init(self):
 
         current_dict_location = 0
@@ -136,3 +146,8 @@ class MRUserbyUserMatrix(MRJob):
                  reducer_init=self.reducer_init,
                  reducer=self.inactive_user_reducer,
                  reducer_final=self.reducer_final)
+
+sudo apt install gcc
+sudo apt-get install --reinstall make
+sudo make install
+'''
