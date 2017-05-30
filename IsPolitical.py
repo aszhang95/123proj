@@ -40,34 +40,41 @@ class IsPolitical(MRJob):
         output: entity, boolean (true if political, false if non-political)
         '''
         line = line.split(',')
-        #SPACY: determine named entities in comment
     	user=line[-17]
         comment=line[-20]
-        doc = nlp(unicode(comment)) #doc = nlp(u'London is a big city in the United Kingdom.')
+        doc = nlp(unicode(comment)) 
         score = sids_function(comment)
         for ent in doc.ents:
             if ent.label_ in list_of_named_entity_labels:
                 if IsPoliticalSidsAPI(ent):
-                    yield True, (score, 1)
+                    yield True, score
                 if not IsPoliticalSidsAPI(ent):
-                    yield False, (score, 1)
-#still need to figure out how to perform stddev on the two yields
+                    yield False, score
 
-    def combiner(self, is_political, score_count):
-        yield is_political, score_count
-#check this. does combiner need to perform a function always?
+    def combiner(self, is_political, scores):
+        sum_ex = 0
+        sum_ex2 = 0
+        n = 0
+        for score in scores:
+            n += 1
+            sum_ex += score
+            sum_ex2 += score ** 2
 
-    def reducer_init(self):
-        self.sum = 0
-        self.n = 0
-        self.mean = self.sum/self.n
-        self.sum_ex = 0
-        self.sum_ex2 = 0
+        yield is_political, (sum_ex, sum_ex2, n)
 
-    def reducer(self, guest, score_count):
-        for score, count in zip(score_count): #check this zip too. can zip take in generator types?
-            self.sum_ex += score
-            self.count += n
+    def reducer(self, is_political, ex_ex2_n):
+        sum_ex = 0
+        sum_ex2 = 0
+        n = 0
+        for ex, ex_2, n in ex_ex2_n: 
+            sum_ex += ex
+            sum_ex2 += ex2
+            n += n
+        yield is_political, (sum_ex, sum_ex2, n)
 
-    def reducer_final(self):
-        yield ((self.sum_ex2-((self.sum_ex) ** 2)/self.n)/self.n - 1, None) #https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+    def reducer_final(self, is_political, total_ex_ex2_n):
+        mean = total_ex_ex2_n[0] / total_ex_ex2_n[2]
+        n = total_ex_ex2_n[2]
+        sum_ex = total_ex_ex2_n[0]
+        sum_ex2 = total_ex_ex2_n[1]
+        yield is_political, (sum_ex2 - ((sum_ex) ** 2) / n) / n 
