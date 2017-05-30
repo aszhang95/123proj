@@ -1,0 +1,15 @@
+MapReduce POA for project:
+Function returns an np_array of tuples (id_of_the_entity, sentiment) given a comment
+Aggregate on triplet of (user, list(proper_noun, sentiment score)) into a matrix 
+	Row = user
+	Column = column is the entity
+	Field = sentiment score
+	// sometimes people will talk about the same entity
+scipy.sparse  // shrink the matrix
+may need to make a dictionary matching id of a specific type to its actual value
+create another matrix in which 
+       user = row, 
+	column = entity 
+	field = num_occurrences
+c.pickle to store the matrix once it’s been created (look into options to export matrices from 
+numpy)
