@@ -11,16 +11,23 @@ words = set(['politic'])
 
 types = {'Person':'PERSON', 'Event':'EVENT', 'Organization':'ORG', 'Place':'LOC'}
 
-def sentiment(comment, sentence_level = True):
+def sentiment(comment, subjectivity = True):
     doc = nlp(comment)
 
-    outs = []
+    outs = np.zeros(len(doc.ents), dtype = tuple)
 
     for ind, entity in enumerate(doc.ents):
         if entity.label_ in types.values():
             iden = is_political(entity.text)
             analyzed = PatternAnalyzer.analyze(PatternAnalyzer, str(entity.sent))
-            outs.append((iden, analyzed))
+            score = None
+
+            if subjectivity:
+                score = analyzed.polarity * analyzed.subjectivity
+            else:
+                score = analyzed.polarity
+
+            outs.append((iden[0], score))
 
     return outs
 
@@ -53,7 +60,7 @@ def is_political(ent_text):
             description = item['result']['description']
 
         political = sum([word in description for word in words])
-        print(item['result']['@type'])
+
         right_type = sum([t in types.keys() for t in item['result']['@type']])
 
         if political and right_type:

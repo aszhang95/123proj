@@ -4,10 +4,7 @@ import re
 from wikidataintegrator import wdi_core
 import spacy
 from SPARQLWrapper import SPARQLWrapper, JSON
-
-nlp = spacy.load('en')
-list_of_named_entity_labels=['PERSON', 'NORP', 'ORG', 'GPE', 'LOC', 'EVENT', 'WORK_OF_ART', 'LANGUAGE']
-list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President'...add more words...]
+import entity
 
 ''' EXAMPLE ROW:
 {
@@ -43,14 +40,10 @@ class IsPolitical(MRJob):
     	user=line[-17]
         comment=line[-20]
         doc = nlp(unicode(comment)) 
-        score = sids_function(comment)
-        for ent in doc.ents:
-            if ent.label_ in list_of_named_entity_labels:
-                if IsPoliticalSidsAPI(ent):
-                    yield True, score
-                if not IsPoliticalSidsAPI(ent):
-                    yield False, score
-
+        entity_scores = entity.sentiment(comment)
+        for iden, score in entity_scores:
+            yield iden, score
+            
     def combiner(self, is_political, scores):
         sum_ex = 0
         sum_ex2 = 0
