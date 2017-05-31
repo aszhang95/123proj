@@ -2,7 +2,6 @@ from mrjob.job import MRJob
 from mrjob.step import MRStep
 import re
 import spacy
-<<<<<<< HEAD
 import requests as req
 from random import randint
 import json
@@ -13,10 +12,7 @@ list_of_named_entity_labels=['PERSON', 'NORP', 'ORG', 'GPE', 'LOC', 'EVENT', 'WO
 list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President']
 words = set(['politic'])
 types = {'Person':'PERSON', 'Event':'EVENT', 'Organization':'ORG', 'Place':'LOC'}
-=======
-from SPARQLWrapper import SPARQLWrapper, JSON
-import entity
->>>>>>> b94cfe54031663b83bcdb68951409caa00e50e40
+
 
 ''' EXAMPLE ROW:
 {
@@ -48,7 +44,6 @@ class IsPolitical(MRJob):
         '''
         output: entity, boolean (true if political, false if non-political)
         '''
-<<<<<<< HEAD
         data = json.loads(line)
         user = data["author"]
         if user != "[deleted]":
@@ -56,19 +51,9 @@ class IsPolitical(MRJob):
             comment = comment.strip()
             #print("username: {}, comment: {}".format(user, comment))
             entity_scores = entity.sentiment(comment)
-            for ent in entity_scores:
-                yield ent[0][1], ent[1]
-
-=======
-        line = line.split(',')
-    	user=line[-17]
-        comment=line[-20]
-        doc = nlp(unicode(comment)) 
-        entity_scores = entity.sentiment(comment)
-        for iden, score in entity_scores:
-            yield iden, score
+            for iden, score in entity_scores:
+                yield iden, score
             
->>>>>>> b94cfe54031663b83bcdb68951409caa00e50e40
     def combiner(self, is_political, scores):
         sum_ex = 0
         sum_ex2 = 0
