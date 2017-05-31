@@ -18,7 +18,7 @@ def sentiment(comment, subjectivity = True):
 
     for ind, entity in enumerate(doc.ents):
         if entity.label_ in types.values():
-            iden = is_political(entity.text)
+            iden, political_entity = is_political(entity.text)
             analyzed = PatternAnalyzer.analyze(PatternAnalyzer, str(entity.sent))
             score = None
 
@@ -27,7 +27,7 @@ def sentiment(comment, subjectivity = True):
             else:
                 score = analyzed.polarity
 
-            outs.append((iden[0], score))
+            outs.append((political_entity, score))
 
     return outs
 
