@@ -9,7 +9,7 @@ import csv
 # all json objects are delimited by \n so need to read-in line by line and then do json.load
 
 print("Usage: once you've downloaded a json file to the data directory, type:")
-print('python3 json_parser.py "data/sample_data.json"')
+print('python3 json_parser.py "data/2008onwards000000000049.json"')
 
 pathname = os.getcwd() 
 base_path = os.path.abspath(pathname) + "/"
@@ -29,10 +29,11 @@ with open(full_path) as data_file:
     for line in data_file:
         data = json.loads(line)
         user = data["author"]
-        if user is not "[deleted]":
-            comment = data["body"]
-            comment.strip(",")
-            comment.strip()
+        if user != "[deleted]":
+            comment = str(data["body"])
+            comment = comment.replace(",", "")
+            comment = comment.replace("\n", "")
+            comment = comment.replace("\r", "")
             # once we've stripped the comment correctly then
             # comment hasn't been correctly stripped yet
 
@@ -44,7 +45,5 @@ with open(full_path) as data_file:
 
     print("Done.")
 
-'''
-{"body":"hmm, interesting.","score_hidden":false,"archived":true,"name":"t1_c02sb9r","author":"[deleted]","downs":"0","created_utc":"1199161440","subreddit_id":"t5_2cneq","link_id":"t3_648up","parent_id":"t1_c02sb97","score":"0","retrieved_on":"1425820178","controversiality":"0","gilded":"0","id":"c02sb9r","subreddit":"politics","ups":"0"}
 
-'''
+
