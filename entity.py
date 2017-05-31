@@ -17,15 +17,10 @@ def sentiment(comment, sentence_level = True):
     outs = []
 
     for ind, entity in enumerate(doc.ents):
-        print(entity.label_)
         if entity.label_ in types.values():
             iden = is_political(entity.text)
-            print(iden)
-            if iden:
-                print(entity.sent)
-                analyzed = PatternAnalyzer.analyze(PatternAnalyzer, str(entity.sent))
-                print(analyzed)
-                outs.append((iden, analyzed))
+            analyzed = PatternAnalyzer.analyze(PatternAnalyzer, str(entity.sent))
+            outs.append((iden, analyzed))
 
     return outs
 
@@ -65,4 +60,10 @@ def is_political(ent_text):
             if political > score:
                 out = (item['result']['@id'], item['result']['name'])
                 score = political
-    return out
+                political_entity = True
+    
+    if not out:
+        entity = data['itemListElement'][0]['result']
+        out = (entity['@id'], entity['name'])
+        political_entity = False
+    return out, political_entity
