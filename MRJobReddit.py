@@ -6,20 +6,18 @@ import csv
 import numpy as np
 from functools import reduce
 import operator
-from mr3px.csvprotocol import CsvProtocol
 
 nlp = spacy.load('en')
 #pip install mr3px
 #https://stackoverflow.com/questions/31032885/mrjob-and-python-csv-file-output-for-reducer/31331870#31331870
 #https://pypi.python.org/pypi/mr3px
+#python3 taskx.py csvfile > newcsvfilename
 
 class MRFindInactiveUsers(MRJob):
     '''
     This will yield the inactive users (less than 5 comments) into a csv file
     as user, None
     ''' 
-
-    OUTPUT_PROTOCOL = CsvProtocol  # write output as CSV
 
     def inactive_user_mapper(self, _, comment):
         print(comment)
@@ -55,8 +53,10 @@ def CSVtoList(csv_filename):
     '''
     inactive = open(csv_filename)
     inactive = inactive.readlines()
+
     inactive_user_list = []
-    for x, user in inactive:
+    for user in inactive:
+        user = user.strip()
         inactive_user_list.append(user)
 
     return inactive_user_list
@@ -116,8 +116,6 @@ class MRUserbyUserMatrix(MRJob):
     Output:
         csv file with each line like --> (x coordinate of matrix, y coordinate of matrix), similarity score
     '''
-
-    OUTPUT_PROTOCOL = CsvProtocol  # write output as CSV
 
     def mapper_init(self):
 
