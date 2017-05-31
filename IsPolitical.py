@@ -1,13 +1,17 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import re
-from wikidataintegrator import wdi_core
 import spacy
-from SPARQLWrapper import SPARQLWrapper, JSON
+import requests as req
+from random import randint
+import json
+import entity
 
 nlp = spacy.load('en')
 list_of_named_entity_labels=['PERSON', 'NORP', 'ORG', 'GPE', 'LOC', 'EVENT', 'WORK_OF_ART', 'LANGUAGE']
-list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President'...add more words...]
+list_of_political_words=['politician', 'Congress', 'President', 'senator', 'State', 'Vice-President']
+words = set(['politic'])
+types = {'Person':'PERSON', 'Event':'EVENT', 'Organization':'ORG', 'Place':'LOC'}
 
 ''' EXAMPLE ROW:
 {
@@ -39,17 +43,15 @@ class IsPolitical(MRJob):
         '''
         output: entity, boolean (true if political, false if non-political)
         '''
-        line = line.split(',')
-    	user=line[-17]
-        comment=line[-20]
-        doc = nlp(unicode(comment)) 
-        score = sids_function(comment)
-        for ent in doc.ents:
-            if ent.label_ in list_of_named_entity_labels:
-                if IsPoliticalSidsAPI(ent):
-                    yield True, score
-                if not IsPoliticalSidsAPI(ent):
-                    yield False, score
+        data = json.loads(line)
+        user = data["author"]
+        if user != "[deleted]":
+            comment = data["body"]
+            comment = comment.strip()
+            #print("username: {}, comment: {}".format(user, comment))
+            entity_scores = entity.sentiment(comment)
+            for ent in entity_scores:
+                yield ent[0][1], ent[1]
 
     def combiner(self, is_political, scores):
         sum_ex = 0
@@ -77,4 +79,10 @@ class IsPolitical(MRJob):
         n = total_ex_ex2_n[2]
         sum_ex = total_ex_ex2_n[0]
         sum_ex2 = total_ex_ex2_n[1]
-        yield is_political, (sum_ex2 - ((sum_ex) ** 2) / n) / n 
+        print(n)
+        yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
+        #https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Na.C3.AFve_algorithm
+
+if __name__ == '__main__':
+  IsPolitical.run()
+  
