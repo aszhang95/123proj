@@ -13,12 +13,10 @@ class MRFindActiveUsers(MRJob):
 
     def active_user_mapper(self, _, line):
 
-        data = json.loads(line)
-        user = data["author"]
-        if user != "[deleted]":
-            comment = data["body"]
-            comment = comment.strip()
-            yield user, 1
+        user = line[0]
+        comment = line[1]
+        comment = comment.strip()
+        yield user, 1
     
     def active_user_combiner(self, user, count):
 
