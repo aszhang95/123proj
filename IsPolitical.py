@@ -45,31 +45,38 @@ class IsPolitical(MRJob):
         sum_ex = 0
         sum_ex2 = 0
         n = 0
-       #heights = [0,0,0,0,0,0,0,0,0,0]
+        heights = [0] * 20
         for score in scores:
             n += 1
             sum_ex += score
             sum_ex2 += score ** 2
-            #temp = int(str(score)[0])
-            #heights[temp] += 1
+            temp = score * 10
+            if str(temp)[0] == '-':
+                if str(temp)[2] != '.':
+                    heights[9 - int(str(temp)[1])] += 1
+                else: 
+                    if str(temp)[1] != '.':
+                        heights[19] += 1
+                    else:
+                        heights[10 + int(str(temp)[1])] += 1
 
-        yield is_political, (sum_ex, sum_ex2, n)#, heights)
+        yield is_political, (sum_ex, sum_ex2, n, heights)
 
     def reducer(self, is_political, ex_ex2_n_heights):
         sum_ex = 0
         sum_ex2 = 0
         sum_n = 0
-        #sum_heights = [0,0,0,0,0,0,0,0,0,0]
-        for ex, ex2, n in ex_ex2_n_heights: 
+        sum_heights = [0] * 20
+        for ex, ex2, n, heights in ex_ex2_n_heights: 
             sum_ex += ex
             sum_ex2 += ex2
             sum_n += n
-            for i in range(0,10):
-                pass
-                #sum_heights[i] += heights[i]
-                #print(heights[i])
+            for i in range(0,20):
+                #pass
+                sum_heights[i] += heights[i]
+                print(heights[i])
 
-        yield is_political, (sum_ex, sum_ex2, sum_n)#, sum_heights)
+        yield is_political, (sum_ex, sum_ex2, sum_n, sum_heights)
 
     def reducer_stddev(self, is_political, value):
         ex_ex2_n_heights = tuple(value)
@@ -78,13 +85,14 @@ class IsPolitical(MRJob):
         n = ex_ex2_n_heights[0][2]
         sum_ex = ex_ex2_n_heights[0][0]
         sum_ex2 = ex_ex2_n_heights[0][1]
-        x = np.arange(10)
-        #plt.bar(x, height= ex_ex2_n_heights[3])
-        #plt.xticks(x, ['0-.1','.1-.2','.2-.3','.3-.4','.4-.5','.5-.6','.6-.7','.7-.8','.8-.9','.9-1.0'])
-        print(n)
+        x = np.arange(20)
+        plt.bar(x, height= ex_ex2_n_heights[0][3])
+        plt.xticks(x, ['-1.0 to -.9','-.9 to -.8','-.8 to -.7','-.7 to -.6','-.6 to -.5','-.5 to -.4','-.4 to -.3','-.3 to -.2','-.2 to -.1','-.1 to 0','0 to .1','.1 to .2','.2 to .3','.3 to .4','.4 to .5','.5 to .6','.6 to .7','.7 to .8','.8 to .9','.9 to 1.0'])
+        #print(n)
         print('done!')
         print(is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n))
         yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
+        plt.show()
 
     def steps(self):
         return [
