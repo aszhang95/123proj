@@ -28,7 +28,7 @@ def sentiment(comment, subjectivity = True):
                 else:
                     score = analyzed.polarity
 
-                outs.append((political_entity, score))
+                outs.append((iden, political_entity, score))
 
     return outs
 
@@ -40,7 +40,7 @@ def is_political(ent_text):
 
     api_key = 'AIzaSyAMSkyNxAUbhtlvfWOKGJAO8w1hbj2WXC0'
     service_url = 'https://kgsearch.googleapis.com/v1/entities:search'
-    ent_text = re.sub("[^\w]", "")
+    ent_text = re.sub("[^\w]", "", ent_text)
     params = [
         ('query', ent_text),
         ('limit', 5),
@@ -97,7 +97,7 @@ def is_political(ent_text):
     if not out:
         try:
             entity = data['itemListElement'][0]['result']
-            out = (entity['@id'], entity['name'])
+            out = entity['@id']
         except:
             print('\n NOTHING FOUND FOR ENTITY: {}'.format(ent_text))
             print(data)

@@ -6,9 +6,19 @@ import json
 from entity import *
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.sparse import dok_matrix
 #from random import randint
 
+
 class IsPolitical(MRJob):
+
+    def mapper_init(self):
+        USERS = dict()
+        USER_INDEX = 0
+        ENTITIES = dict()
+        ENTITY_INDEX = 0
+
+        SCORE_MATRIX = dok_matrix((20000, 100000))
 
     def mapper(self, _, line):
         '''
@@ -32,10 +42,27 @@ class IsPolitical(MRJob):
             comment = data["body"]
             comment = comment.strip()
             sentiments = sentiment(comment)
-            #print ("hello")
-            for is_political, score in sentiments:
-                if score:
-                    yield is_political, score
+
+            if sentiments:
+
+                #print ("hello")
+                for iden, is_political, score in sentiments:
+
+                    if score:
+
+                        if is_political:
+
+                            if user not in USERS.keys():
+                                USERS[user] = USER_INDEX
+                                USER_INDEX += 1
+
+                            if iden not in entities.keys():
+                                ENTITIES[iden] = ENTITY_INDEX
+                                ENTITY_INDEX += 1
+                            
+                            SCORE_MATRIX[USERS[user], ENTITIES[iden]] += score
+
+                        yield is_political, score
 
             #entity_scores = entity.sentiment(comment)
             #for political, score in entity_scores:
