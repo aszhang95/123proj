@@ -59,7 +59,7 @@ class IsPolitical(MRJob):
         line_len = len(line)
         line = line[1:line_len-1]
         parts = line.split(',')
-        user = parts[0]
+        user = re.findall(r'\["(.*?)"', parts[0])[0]
         #print ("helooo")
 
         # user = data["author"]
@@ -67,8 +67,8 @@ class IsPolitical(MRJob):
             #print ("hi")
 
             # comment = data["body"]
-            comment = parts[1]
-            comment = comment.strip()
+            comment = re.findall(r'"(.*?)"\]', parts[1])[0]
+
             sentiments = sentiment(comment)
 
             if sentiments:
