@@ -34,10 +34,10 @@ class IsPolitical(MRJob):
 
 
     def mapper_init(self):
-        users = dict()
-        user_index = 0
-        entities = dict()
-        entity_index = 0
+        self.users = dict()
+        self.user_index = 0
+        self.entities = dict()
+        self.entity_index = 0
 
     def mapper(self, _, line):
         '''
@@ -75,19 +75,20 @@ class IsPolitical(MRJob):
                     if score:
 
                         if is_political:
-                            if user not in USERS.keys():
-                                users[user] = user_index
-                            else:
-                                
-                            yield (user, iden), score
+
+                            if user not in self.users:
+                                self.users[user] = self.user_index
+                                self.user_index += 1
+                            
+                            if iden not in self.entities:
+                                self.entities[iden] = self.entity_index
+                                self.entity_index += 1
+
+                            yield (self.users[user], self.entities[iden]), score
 
 
                         yield is_political, score
 
-            #entity_scores = entity.sentiment(comment)
-            #for political, score in entity_scores:
-                #yield political, score
-            
     def combiner(self, key, value):
         scores = value
         if type(key) == bool:
@@ -95,7 +96,7 @@ class IsPolitical(MRJob):
             sum_ex = 0
             sum_ex2 = 0
             n = 0
-            heights = np.zeros(20)
+            heights = np.zeros(201)
             for score in scores:
                 n += 1
                 sum_ex += score
@@ -117,7 +118,7 @@ class IsPolitical(MRJob):
             sum_ex = 0
             sum_ex2 = 0
             sum_n = 0
-            sum_heights = np.zeros(200)
+            sum_heights = np.zeros(201)
             for ex, ex2, n, heights in ex_ex2_n_heights: 
                 sum_ex += ex
                 sum_ex2 += ex2
@@ -135,7 +136,7 @@ class IsPolitical(MRJob):
             is_political = key
             sum_ex, sum_ex2, n, sum_heights = next(value)
             mean = sum_ex / n
-            x = np.arange(200)
+            x = np.arange(201)
             plt.bar(x, height = sum_heights)
             locs = np.arange(0,200,10)
             ticks = ['{} to {}'.format((boundary - 100)/100,((boundary - 100)/100) + 0.01) for boundary in locs]
@@ -145,7 +146,8 @@ class IsPolitical(MRJob):
             else:
                 title = 'Histogram of Sentiment for non-political entities'
             plt.title(title)
-            plt.savefig('{}.png'.format(title))
+            plt.show()
+            #plt.savefig('{}.png'.format(title))
             yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
         else:
             yield key, value
