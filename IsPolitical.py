@@ -6,9 +6,32 @@ import json
 from entity import *
 import matplotlib.pyplot as plt
 import numpy as np
-#from random import randint
+from scipy.sparse import dok_matrix
+from random import randint
+
+
+'''
+    def mapper_init(self):
+        USERS = dict()
+        USER_INDEX = 0
+        ENTITIES = dict()
+        ENTITY_INDEX = 0
+
+        SCORE_MATRIX = dok_matrix((20000, 100000))
+
+                            if user not in USERS.keys():
+                                USERS[user] = USER_INDEX
+                                USER_INDEX += 1
+
+                            if iden not in entities.keys():
+                                ENTITIES[iden] = ENTITY_INDEX
+                                ENTITY_INDEX += 1
+                            
+                            SCORE_MATRIX[USERS[user], ENTITIES[iden]] += score
+'''
 
 class IsPolitical(MRJob):
+
 
     def mapper(self, _, line):
         '''
@@ -22,25 +45,40 @@ class IsPolitical(MRJob):
         plt.show()
         '''
         #print('heloooooo')
-        data = json.loads(line)
+        # data = json.loads(line)
+        line_len = len(line)
+        line = line[1:line_len-1]
+        parts = line.split(',')
+        user = parts[0]
         #print ("helooo")
 
-        user = data["author"]
+        # user = data["author"]
         if user != "[deleted]":
             #print ("hi")
 
-            comment = data["body"]
+            # comment = data["body"]
+            comment = parts[1]
             comment = comment.strip()
             sentiments = sentiment(comment)
-            #print ("hello")
-            for is_political, score in sentiments:
-                if score:
-                    yield is_political, score
+
+            if sentiments:
+
+                #print ("hello")
+                for iden, is_political, score in sentiments:
+
+                    if score:
+
+                        if is_political:
+                            yield (user, iden), score
+
+
+                        yield is_political, score
 
             #entity_scores = entity.sentiment(comment)
             #for political, score in entity_scores:
                 #yield political, score
             
+
     def combiner(self, is_political, scores):
         sum_ex = 0
         sum_ex2 = 0
@@ -104,6 +142,7 @@ class IsPolitical(MRJob):
           MRStep(reducer=self.reducer_stddev)]
 
         #https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Na.C3.AFve_algorithm
+
 
 if __name__ == '__main__':
   IsPolitical.run()

@@ -28,7 +28,7 @@ def sentiment(comment, subjectivity = True):
                 else:
                     score = analyzed.polarity
 
-                outs.append((political_entity, score))
+                outs.append((iden, political_entity, score))
 
     return outs
 
@@ -61,8 +61,8 @@ def is_political(ent_text):
                 try:
                     description = item['result']['description']
                 except:
-                    print('\nERROR: NO DESCRIPTION')
-                    print(item)
+                    #ERROR: NO DESCRIPTION
+                    #print(item)
                     description = ''
             try:
                 description += ' ' + item['result']['name']
@@ -74,29 +74,27 @@ def is_political(ent_text):
             try:
                 right_type = sum([t in types.keys() for t in item['result']['@type']])
             except:
-                print('\nERROR IN TYPE')
-                print(ent_text)
-                print(item)
+                pass
+                #ERROR IN TYPE
 
             if political and right_type:
                 if political > score:
                     try:
-                        out = (item['result']['@id'], item['result']['name'])
+                        out = item['result']['name']
                         score = political
                         political_entity = True
                     except:
-                        print('\nERROR IN ID/NAME')
-                        print(item)
+                        pass
+                        #ERROR IN ID/NAME
     else:
-        print('\nERROR: NO RESULTS FOR {}'.format(ent_text))
-        print(data)
+        pass
+        #ERROR: NO RESULTS FOR {}'.format(ent_text))
             
     if not out:
         try:
             entity = data['itemListElement'][0]['result']
-            out = (entity['@id'], entity['name'])
+            out = entity['name']
         except:
-            print('\n NOTHING FOUND FOR ENTITY: {}'.format(ent_text))
-            print(data)
-
+            pass
+            #print('\n NOTHING FOUND FOR ENTITY: {}'.format(ent_text))
     return (out, political_entity)
