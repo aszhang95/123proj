@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 #from random import randint
 
-nlp = spacy.load('en')
-
 class IsPolitical(MRJob):
 
     def mapper(self, _, line):
@@ -36,7 +34,8 @@ class IsPolitical(MRJob):
             sentiments = sentiment(comment)
             #print ("hello")
             for is_political, score in sentiments:
-                yield is_political, score
+                if score:
+                    yield is_political, score
 
             #entity_scores = entity.sentiment(comment)
             #for political, score in entity_scores:
@@ -46,40 +45,44 @@ class IsPolitical(MRJob):
         sum_ex = 0
         sum_ex2 = 0
         n = 0
-        heights = [0,0,0,0,0,0,0,0,0,0]
+       #heights = [0,0,0,0,0,0,0,0,0,0]
         for score in scores:
             n += 1
             sum_ex += score
             sum_ex2 += score ** 2
-            temp = int(str(score)[0])
-            heights[temp] += 1
+            #temp = int(str(score)[0])
+            #heights[temp] += 1
 
-        yield is_political, (sum_ex, sum_ex2, n, heights)
+        yield is_political, (sum_ex, sum_ex2, n)#, heights)
 
     def reducer(self, is_political, ex_ex2_n_heights):
         sum_ex = 0
         sum_ex2 = 0
         sum_n = 0
-        sum_heights = [0,0,0,0,0,0,0,0,0,0]
-        for ex, ex2, n, heights in ex_ex2_n_heights: 
+        #sum_heights = [0,0,0,0,0,0,0,0,0,0]
+        for ex, ex2, n in ex_ex2_n_heights: 
             sum_ex += ex
             sum_ex2 += ex2
             sum_n += n
             for i in range(0,10):
-                sum_heights[i] += heights[i]
-                print(heights[i])
+                pass
+                #sum_heights[i] += heights[i]
+                #print(heights[i])
 
-        yield is_political, (sum_ex, sum_ex2, sum_n, sum_heights)
+        yield is_political, (sum_ex, sum_ex2, sum_n)#, sum_heights)
 
-    def reducer_stddev(self, is_political, ex_ex2_n_heights):
-        mean = ex_ex2_n_heights[0] / ex_ex2_n_heights[2]
-        n = ex_ex2_n_heights[2]
-        sum_ex = ex_ex2_n_heights[0]
-        sum_ex2 = ex_ex2_n_heights[1]
+    def reducer_stddev(self, is_political, value):
+        ex_ex2_n_heights = tuple(value)
+        print(ex_ex2_n_heights)
+        mean = ex_ex2_n_heights[0][0] / ex_ex2_n_heights[0][2]
+        n = ex_ex2_n_heights[0][2]
+        sum_ex = ex_ex2_n_heights[0][0]
+        sum_ex2 = ex_ex2_n_heights[0][1]
         x = np.arange(10)
-        plt.bar(x, height= ex_ex2_n_heights[3])
-        plt.xticks(x, ['0-.1','.1-.2','.2-.3','.3-.4','.4-.5','.5-.6','.6-.7','.7-.8','.8-.9','.9-1.0'])
+        #plt.bar(x, height= ex_ex2_n_heights[3])
+        #plt.xticks(x, ['0-.1','.1-.2','.2-.3','.3-.4','.4-.5','.5-.6','.6-.7','.7-.8','.8-.9','.9-1.0'])
         print(n)
+        print('done!')
         print(is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n))
         yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
 
