@@ -33,9 +33,6 @@ def sentiment(comment, subjectivity = True):
     return outs
 
 
-
-
-
 def is_political(ent_text):
 
     api_key = 'AIzaSyAMSkyNxAUbhtlvfWOKGJAO8w1hbj2WXC0'

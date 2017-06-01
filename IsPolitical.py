@@ -78,69 +78,59 @@ class IsPolitical(MRJob):
             #for political, score in entity_scores:
                 #yield political, score
             
-    def combiner(self, key, value):
-        scores = value
-        if type(key) == bool:
-            is_political = key
-            sum_ex = 0
-            sum_ex2 = 0
-            n = 0
-            heights = np.zeros(201)
-            for score in scores:
-                n += 1
-                sum_ex += score
-                sum_ex2 += score ** 2
-                bucket = int((score + 1) * 100)
-                heights[bucket] += 1
 
-            yield is_political, (sum_ex, sum_ex2, n, heights)
-        
-        else:
-            pair = key
-            yield pair, sum(scores)
+    def combiner(self, is_political, scores):
+        sum_ex = 0
+        sum_ex2 = 0
+        n = 0
+        heights = [0] * 20
+        for score in scores:
+            n += 1
+            sum_ex += score
+            sum_ex2 += score ** 2
+            temp = score * 10
+            if str(temp)[0] == '-':
+                if str(temp)[2] != '.':
+                    heights[9 - int(str(temp)[1])] += 1
+                else: 
+                    if str(temp)[1] != '.':
+                        heights[19] += 1
+                    else:
+                        heights[10 + int(str(temp)[1])] += 1
 
+        yield is_political, (sum_ex, sum_ex2, n, heights)
 
-    def reducer(self, key, value):
-        if type(key) == bool:
-            is_political = key
-            ex_ex2_n_heights = value
-            sum_ex = 0
-            sum_ex2 = 0
-            sum_n = 0
-            sum_heights = np.zeros(201)
-            for ex, ex2, n, heights in ex_ex2_n_heights: 
-                sum_ex += ex
-                sum_ex2 += ex2
-                sum_n += n
-                sum_heights += np.array(heights)
+    def reducer(self, is_political, ex_ex2_n_heights):
+        sum_ex = 0
+        sum_ex2 = 0
+        sum_n = 0
+        sum_heights = [0] * 20
+        for ex, ex2, n, heights in ex_ex2_n_heights: 
+            sum_ex += ex
+            sum_ex2 += ex2
+            sum_n += n
+            for i in range(0,20):
+                #pass
+                sum_heights[i] += heights[i]
+                print(heights[i])
 
-            yield is_political, (sum_ex, sum_ex2, sum_n, sum_heights)
-        
-        else:
-            yield key, sum(value)
-    
+        yield is_political, (sum_ex, sum_ex2, sum_n, sum_heights)
 
-    def reducer_stddev(self, key, value):
-        if type(key) == bool:
-            is_political = key
-            sum_ex, sum_ex2, n, sum_heights = next(value)
-            mean = sum_ex / n
-            x = np.arange(201)
-            print(sum_heights)
-            plt.bar(x, height = sum_heights)
-            locs = np.arange(0,200,20)
-            ticks = ['{} to {}'.format((boundary - 100)/100,((boundary - 100)/100) + 0.01) for boundary in locs]
-            plt.xticks(locs, ticks)
-            if is_political:
-                title = 'HistogramPolitical'
-            else:
-                title = 'Histogramnon-political'
-            plt.title(title)
-            plt.show()
-            #plt.savefig('{}.png'.format(title))
-            yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
-        else:
-            yield key, value
+    def reducer_stddev(self, is_political, value):
+        ex_ex2_n_heights = tuple(value)
+        print(ex_ex2_n_heights)
+        mean = ex_ex2_n_heights[0][0] / ex_ex2_n_heights[0][2]
+        n = ex_ex2_n_heights[0][2]
+        sum_ex = ex_ex2_n_heights[0][0]
+        sum_ex2 = ex_ex2_n_heights[0][1]
+        x = np.arange(20)
+        plt.bar(x, height= ex_ex2_n_heights[0][3])
+        plt.xticks(x, ['-1.0 to -.9','-.9 to -.8','-.8 to -.7','-.7 to -.6','-.6 to -.5','-.5 to -.4','-.4 to -.3','-.3 to -.2','-.2 to -.1','-.1 to 0','0 to .1','.1 to .2','.2 to .3','.3 to .4','.4 to .5','.5 to .6','.6 to .7','.7 to .8','.8 to .9','.9 to 1.0'])
+        #print(n)
+        print('done!')
+        print(is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n))
+        yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
+        plt.show()
 
     def steps(self):
         return [
