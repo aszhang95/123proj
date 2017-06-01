@@ -89,10 +89,11 @@ class IsPolitical(MRJob):
         plt.bar(x, height= ex_ex2_n_heights[0][3])
         plt.xticks(x, ['-1.0 to -.9','-.9 to -.8','-.8 to -.7','-.7 to -.6','-.6 to -.5','-.5 to -.4','-.4 to -.3','-.3 to -.2','-.2 to -.1','-.1 to 0','0 to .1','.1 to .2','.2 to .3','.3 to .4','.4 to .5','.5 to .6','.6 to .7','.7 to .8','.8 to .9','.9 to 1.0'])
         #print(n)
+        plt.show()
+
         print('done!')
         print(is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n))
         yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
-        plt.show()
 
     def steps(self):
         return [
