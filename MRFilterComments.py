@@ -24,23 +24,23 @@ class MRMakeSentences(MRJob):
             user = user.strip()
             user_edit = re.findall(r'"\\"(.*)"', user)
             self.active_user_list[ind] = user_edit[0]
-        
+
+
+        #print(self.active_user_list)
 
     def mapper(self, _, line):
+
 
         parsed = line.split(',')
         user = re.findall(r'"(.*)',parsed[0])[0]
 
-        #if user in self.active_user_list:
+        if user in self.active_user_list:
             #print(line)
-        comment = re.sub("[^(\w\s)]", "", parsed[1])
-        comment = comment.strip()
-        self.num += 1
-        yield (user, comment, self.num), None
-        #else:
-            #print(user)
+            comment = re.sub("[^(\w\s)]", "", parsed[1])
+            comment = comment.strip()
+            yield (user, comment), None
 
-    def reducer(self, user, comment):
+    def reducer(self, user, count):
 
         yield user, None
 

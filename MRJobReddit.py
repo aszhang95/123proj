@@ -32,7 +32,7 @@ class MRFindInactiveUsers(MRJob):
         yield user, sum(count)
 
     def inactive_user_reducer(self, user, count):
-
+        #shouldn't this just be count?
         if sum(count) < 5:
             yield (None, user)
 
@@ -54,6 +54,8 @@ def CSVtoList(csv_filename):
     inactive = open(csv_filename)
     inactive = inactive.readlines()
 
+    #this part unnecesarily adds computation. readlines turns things into lists automatically
+    #by adding a for loop AND appending everytime this is a super unnecesary add to memory
     inactive_user_list = []
     for user in inactive:
         user = user.strip()

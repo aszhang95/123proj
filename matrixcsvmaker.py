@@ -4,6 +4,7 @@ import sys
 import csv
 import numpy as np
 import ast
+import re
 
 
 class MRUserbyUserMatrix(MRJob):
@@ -20,31 +21,34 @@ class MRUserbyUserMatrix(MRJob):
 
     def mapper_init(self):
 
-        current_dict_location = 0
-        user_dict = {}
+        self.current_dict_location = 0
+        self.user_dict = {}
 
     def mapper(self, _, pair):
 
-        pair_info = [x.strip() for x in pair.split('|')]
-        sentence1 = pair_info[0]
-        sentence1_user = pair_info[1]
-        sentence1_vector = pair_info[2]
+        pair_info = [x.strip() for x in pair.split(',')]
+        sentence1 = re.findall(r'\'(.*?)\'', pair_info[1])
+        sentence1_user = pair_info[0]
+        sentence1_user = re.findall(r'\'(.*?)\'', pair_info[0])[0]
+        sentence1_vector = ",".join(pair_info[2:302])
+        sentence1_vector = '[' + sentence1_vector + ']'
         sentence1_vector = np.asarray(ast.literal_eval(sentence1_vector))
-        sentence2 = pair_info[3]
-        sentence2_user = pair_info[4]
-        sentence2_vector = pair_info[5]
+        sentence2 = re.findall(r'\'(.*?)\'', pair_info[303])
+        sentence2_user = re.findall(r'\'(.*?)\'', pair_info[302])[0]
+        sentence2_vector = ",".join(pair_info[304:])
+        sentence2_vector = '[' + sentence2_vector.strip('"')
         sentence2_vector = np.asarray(ast.literal_eval(sentence2_vector))
         if sentence1_user not in self.user_dict:
-            self.user_dict[sentence1_user] = current_dict_location
-            current_dict_location += 1
+            self.user_dict[sentence1_user] = self.current_dict_location
+            self.current_dict_location += 1
         if sentence2_user not in self.user_dict:
-            self.user_dict[sentence2_user] = current_dict_location
-            current_dict_location += 1
+            self.user_dict[sentence2_user] = self.current_dict_location
+            self.current_dict_location += 1
 
-        similiarity_score = np.dot(sentence1_vector,sentence2_vector)
+        similarity_score = np.dot(sentence1_vector,sentence2_vector)
 
-        yield (sentence1_user, sentence2_user), similarity_score
-        yield (sentence2_user, sentence1_user), similarity_score        
+        yield (self.user_dict[sentence1_user], self.user_dict[sentence2_user]), similarity_score
+        yield (self.user_dict[sentence2_user], self.user_dict[sentence1_user]), similarity_score        
 
     def combiner(self, users, scores):
 
@@ -54,7 +58,7 @@ class MRUserbyUserMatrix(MRJob):
 
         #user_row_index = self.user_dict[user[0]]
         #user_col_index = self.user_dict[user[1]]
-        yield (self.user_dict[user[0]], self.user_dict[user[1]]), sum(scores)
+        yield (user[0], user[1]), sum(scores)
 
     def steps(self):
 

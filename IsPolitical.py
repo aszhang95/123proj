@@ -55,6 +55,7 @@ class IsPolitical(MRJob):
         #print('heloooooo')
         # data = json.loads(line)
         self.comments += 1
+
         line_len = len(line)
         line = line[1:line_len-1]
         parts = line.split(',')
@@ -88,13 +89,12 @@ class IsPolitical(MRJob):
                                 self.entities[iden] = self.entity_index
                                 self.entity_index += 1
 
+
                             yield (user, self.users[user], iden, self.entities[iden]), score
 
 
+
                         yield is_political, score
-
-    def mapper_final(self):
-
 
     def combiner(self, key, value):
         scores = value
