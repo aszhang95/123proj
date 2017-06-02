@@ -56,10 +56,13 @@ class IsPolitical(MRJob):
         # data = json.loads(line)
         self.comments += 1
 
+        print(type(line))
         line_len = len(line)
         line = line[1:line_len-1]
         parts = line.split(',')
-        user = re.findall(r'\["(.*?)"', parts[0])[0]
+        user = re.findall(r'"(.*?)"', parts[0])[0]
+        print(user)
+
         #print ("helooo")
 
         # user = data["author"]
@@ -67,7 +70,8 @@ class IsPolitical(MRJob):
             #print ("hi")
 
             # comment = data["body"]
-            comment = re.findall(r'"(.*?)"\]', parts[1])[0]
+            comment = parts[1][1:len(parts[1])-1]
+            print(comment)
 
             sentiments = sentiment(comment)
 
