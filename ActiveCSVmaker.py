@@ -12,7 +12,7 @@ class MRFindActiveUsers(MRJob):
     ''' 
 
     def active_user_mapper(self, _, line):
-
+        line = line.split(",")
         user = line[0]
         comment = line[1]
         comment = comment.strip()
@@ -23,8 +23,9 @@ class MRFindActiveUsers(MRJob):
         yield user, sum(count)
 
     def active_user_reducer(self, user, count):
-
-        yield (user, None)
+        c = sum(count)
+        if c > 10:
+            yield (user, c)
 
     def steps(self):
 

@@ -14,7 +14,7 @@ class MRMakeSentences(MRJob):
     ''' 
     def mapper_init(self):
 
-        self.active_user_list = np.zeros(200, dtype=object)
+        self.active_user_list = np.zeros(100000, dtype=object)
         active = open('active.csv')
         active = active.readlines()
         self.num = 0
@@ -23,6 +23,7 @@ class MRMakeSentences(MRJob):
             user = user.strip()
             user_edit = re.findall(r'"\\"(.*)"', user)
             self.active_user_list[ind] = user_edit[0]
+        print('here!')
 
         #print(self.active_user_list)
 

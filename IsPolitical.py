@@ -143,7 +143,7 @@ class IsPolitical(MRJob):
             mean = sum_ex / n
             x = np.arange(NUM_BUCKETS + 1)
             plt.bar(x, height = sum_heights)
-            locs = np.arange(0,NUM_BUCKETS,10)
+            locs = np.arange(0,NUM_BUCKETS,NUM_BUCKETS/10)
             off = NUM_BUCKETS / 2
             ticks = ['{} to {}'.format((boundary - off)/off,((boundary - off)/off) + 2/NUM_BUCKETS) for boundary in locs]
             plt.xticks(locs, ticks)
