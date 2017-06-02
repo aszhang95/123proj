@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import dok_matrix
 from random import randint
 
-
+NUM_BUCKETS = 10
 '''
     def mapper_init(self):
         USERS = dict()
@@ -34,10 +34,12 @@ class IsPolitical(MRJob):
 
 
     def mapper_init(self):
-        users = dict()
-        user_index = 0
-        entities = dict()
-        entity_index = 0
+        self.users = dict()
+        self.user_index = 0
+        self.entities = dict()
+        self.entity_index = 0
+        self.searches = 0
+        self.comments = 0
 
     def mapper(self, _, line):
         '''
@@ -52,10 +54,11 @@ class IsPolitical(MRJob):
         '''
         #print('heloooooo')
         # data = json.loads(line)
+        self.comments += 1
         line_len = len(line)
         line = line[1:line_len-1]
         parts = line.split(',')
-        user = parts[0]
+        user = re.findall(r'\["(.*?)"', parts[0])[0]
         #print ("helooo")
 
         # user = data["author"]
@@ -63,31 +66,36 @@ class IsPolitical(MRJob):
             #print ("hi")
 
             # comment = data["body"]
-            comment = parts[1]
-            comment = comment.strip()
+            comment = re.findall(r'"(.*?)"\]', parts[1])[0]
+
             sentiments = sentiment(comment)
 
             if sentiments:
 
                 #print ("hello")
                 for iden, is_political, score in sentiments:
-
+                    self.searches += 1
+                    print('{} searches'.format(self.searches))
                     if score:
 
                         if is_political:
-                            if user not in USERS.keys():
-                                users[user] = user_index
-                            else:
-                                
-                            yield (user, iden), score
+
+                            if user not in self.users:
+                                self.users[user] = self.user_index
+                                self.user_index += 1
+                            
+                            if iden not in self.entities:
+                                self.entities[iden] = self.entity_index
+                                self.entity_index += 1
+
+                            yield (user, self.users[user], iden, self.entities[iden]), score
 
 
                         yield is_political, score
 
-            #entity_scores = entity.sentiment(comment)
-            #for political, score in entity_scores:
-                #yield political, score
-            
+    def mapper_final(self):
+
+
     def combiner(self, key, value):
         scores = value
         if type(key) == bool:
@@ -95,12 +103,12 @@ class IsPolitical(MRJob):
             sum_ex = 0
             sum_ex2 = 0
             n = 0
-            heights = np.zeros(20)
+            heights = np.zeros(NUM_BUCKETS + 1)
             for score in scores:
                 n += 1
                 sum_ex += score
                 sum_ex2 += score ** 2
-                bucket = int((score + 1) * 100)
+                bucket = int((score + 1) * NUM_BUCKETS/2)
                 heights[bucket] += 1
 
             yield is_political, (sum_ex, sum_ex2, n, heights)
@@ -117,7 +125,7 @@ class IsPolitical(MRJob):
             sum_ex = 0
             sum_ex2 = 0
             sum_n = 0
-            sum_heights = np.zeros(200)
+            sum_heights = np.zeros(NUM_BUCKETS + 1)
             for ex, ex2, n, heights in ex_ex2_n_heights: 
                 sum_ex += ex
                 sum_ex2 += ex2
@@ -135,17 +143,18 @@ class IsPolitical(MRJob):
             is_political = key
             sum_ex, sum_ex2, n, sum_heights = next(value)
             mean = sum_ex / n
-            x = np.arange(200)
+            x = np.arange(NUM_BUCKETS + 1)
             plt.bar(x, height = sum_heights)
-            locs = np.arange(0,200,10)
-            ticks = ['{} to {}'.format((boundary - 100)/100,((boundary - 100)/100) + 0.01) for boundary in locs]
+            locs = np.arange(0,NUM_BUCKETS,NUM_BUCKETS/10)
+            off = NUM_BUCKETS / 2
+            ticks = ['{} to {}'.format((boundary - off)/off,((boundary - off)/off) + 2/NUM_BUCKETS) for boundary in locs]
             plt.xticks(locs, ticks)
             if is_political:
                 title = 'Histogram of Sentiment for Political entities'
             else:
                 title = 'Histogram of Sentiment for non-political entities'
             plt.title(title)
-            plt.savefig('{}.png'.format(title))
+            plt.show()
             yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
         else:
             yield key, value
@@ -153,6 +162,7 @@ class IsPolitical(MRJob):
     def steps(self):
         return [
           MRStep(
+                 mapper_init = self.mapper_init,
                  mapper=self.mapper,
                  combiner=self.combiner,
                  reducer=self.reducer),
