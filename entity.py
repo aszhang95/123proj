@@ -9,7 +9,7 @@ nlp = spacy.load('en')
 
 words = set(['politic'])
 
-types = {'Person':'PERSON', 'Event':'EVENT', 'Organization':'ORG', 'Place':'LOC'}
+types = {'Person':'PERSON', 'Organization':'ORG'}
 
 def sentiment(comment, subjectivity = True):
     doc = nlp(comment)
@@ -37,7 +37,7 @@ def is_political(ent_text):
 
     api_key = 'AIzaSyAMSkyNxAUbhtlvfWOKGJAO8w1hbj2WXC0'
     service_url = 'https://kgsearch.googleapis.com/v1/entities:search'
-    ent_text = re.sub("[^\w]", "", ent_text)
+    ent_text = re.sub("[^(\w\s)]", "", ent_text)
     params = [
         ('query', ent_text),
         ('limit', 5),
