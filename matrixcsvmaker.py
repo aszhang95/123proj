@@ -47,8 +47,8 @@ class MRUserbyUserMatrix(MRJob):
 
         similarity_score = np.dot(sentence1_vector,sentence2_vector)
 
-        yield (self.user_dict[sentence1_user], self.user_dict[sentence2_user]), similarity_score
-        yield (self.user_dict[sentence2_user], self.user_dict[sentence1_user]), similarity_score        
+        yield (sentence1_user, self.user_dict[sentence1_user], sentence2_user,self.user_dict[sentence2_user]), similarity_score
+        yield (sentence2_user, self.user_dict[sentence2_user], sentence1_user, self.user_dict[sentence1_user]), similarity_score        
 
     def combiner(self, users, scores):
 
@@ -58,7 +58,7 @@ class MRUserbyUserMatrix(MRJob):
 
         #user_row_index = self.user_dict[user[0]]
         #user_col_index = self.user_dict[user[1]]
-        yield (user[0], user[1]), sum(scores)
+        yield (user), sum(scores)
 
     def steps(self):
 
