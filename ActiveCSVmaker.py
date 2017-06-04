@@ -3,6 +3,7 @@ from mrjob.step import MRStep
 import sys
 import csv
 import json
+import re
 #python3 taskx.py csvfile > newcsvfilename
 
 class MRFindActiveUsers(MRJob):
@@ -12,10 +13,10 @@ class MRFindActiveUsers(MRJob):
     ''' 
 
     def active_user_mapper(self, _, line):
-        line = line.split(",")
-        user = line[0]
-        comment = line[1]
-        comment = comment.strip()
+
+        line = line.split(',')
+        #print(line[0])
+        user = re.findall(r'"(.*)', line[0])[0]
         yield user, 1
     
     def active_user_combiner(self, user, count):
@@ -23,9 +24,8 @@ class MRFindActiveUsers(MRJob):
         yield user, sum(count)
 
     def active_user_reducer(self, user, count):
-        c = sum(count)
-        if c > 10:
-            yield (user, c)
+        if sum(count) > 0:
+            yield (user, None)
 
     def steps(self):
 
