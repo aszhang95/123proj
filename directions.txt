@@ -1,0 +1,11 @@
+Directions:
+
+1.	In terminal: python3 ActiveCSVmaker.py data_formatted.csv > active.csv
+2. 	In terminal: python3 MRMakeSentences.py data_formatted.csv --file active.csv > all_comments.csv
+3.  Go into IPython:
+	a) run NonMRFunctions.py
+	b) make_comment_pairs('all_comments.csv')
+4.	In terminal: python3 matrixcsvmaker.py comment_pairs.csv > matrixinfo.csv
+5.  Go into IPython:
+	a) run NonMRFunctions.py
+	b) matrix_maker('matrixinfo.csv')
