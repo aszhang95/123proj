@@ -54,11 +54,23 @@ class MRUserbyUserMatrix(MRJob):
 
         yield users, sum(scores)
     
-    def reducer(self, user, scores):
+    def reducer_init(self):
 
-        #user_row_index = self.user_dict[user[0]]
-        #user_col_index = self.user_dict[user[1]]
-        yield (user), sum(scores)
+        active = open('active.csv')
+        active = active.readlines()
+
+        self.num_comments_dict = {}
+
+        for line in active:
+            user = re.findall(r'"(.*)"', line)[0]
+            num_comments = ast.literal_eval(re.findall(r'\t(\d+)', line)[0])
+            self.num_comments_dict[user] = num_comments
+
+
+    def reducer(self, users, scores):
+
+        normal_factor = self.num_comments_dict[users[0]] * self.num_comments_dict[users[2]]
+        yield (users), sum(scores)/ normal_factor
 
     def steps(self):
 
@@ -66,6 +78,7 @@ class MRUserbyUserMatrix(MRJob):
           MRStep(mapper_init=self.mapper_init,
                  mapper=self.mapper,
                  combiner=self.combiner,
+                 reducer_init = self.reducer_init,
                  reducer=self.reducer)]
 
 if __name__ == '__main__':

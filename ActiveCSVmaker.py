@@ -24,8 +24,9 @@ class MRFindActiveUsers(MRJob):
         yield user, sum(count)
 
     def active_user_reducer(self, user, count):
-        if sum(count) > 0:
-            yield (user, None)
+        num_comments = sum(count)
+        if num_comments > 0:
+            yield (user, num_comments)
 
     def steps(self):
 
