@@ -2,9 +2,9 @@ from mrjob.job import MRJob
 from mrjob.step import MRStep
 import sys
 import csv
-import json
 import spacy
 import re
+import numpy as np
 #python3 taskx.py csvfile > newcsvfilename
 nlp = spacy.load('en')
 
@@ -14,25 +14,29 @@ class MRMakeSentences(MRJob):
     ''' 
     def mapper_init(self):
 
-        self.active_user_list = []
+        self.active_user_list = np.zeros(200, dtype=object)
         active = open('active.csv')
         active = active.readlines()
 
-        for user in active:
+        for ind, user in enumerate(active):
             user = user.strip()
-            user_edit = re.findall(r'"(.*?)"', user)
-            self.active_user_list.append(user_edit[0])
+            user_edit = re.findall(r'"(.*)"', user)
+            self.active_user_list[ind] = user_edit[0]
+
+        #print(len(self.active_user_list))
 
     def mapper(self, _, line):
 
-        data = json.loads(line)
-        user = data["author"]
-        if user != "[deleted]":
-            if user in self.active_user_list:
-                comment = data["body"]
-                comment = comment.strip()
-                doc = nlp(comment)
-                yield (user, doc.vector), None
+
+        parsed = line.split(',')
+        user = re.findall(r'"(.*)',parsed[0])[0]
+
+        if user in self.active_user_list:
+            #print(line)
+            comment = re.sub("[^(\w\s)]", "", parsed[1])
+            comment = comment.strip()
+            doc = nlp(comment)
+            yield ((user, str(doc), str(doc.vector)), None)
 
     def reducer(self, user, count):
 
@@ -44,7 +48,6 @@ class MRMakeSentences(MRJob):
           MRStep(
                  mapper_init=self.mapper_init,
                  mapper=self.mapper,
-                 combiner=self.combiner,
                  reducer=self.reducer)]
 
 if __name__ == '__main__':
