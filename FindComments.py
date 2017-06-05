@@ -13,33 +13,35 @@ class MRFindComments(MRJob):
 
     ''' 
     def mapper_init(self):
+        #initialize list of users from CSVofUsers.csv
+        self.user_list = []
+        users = open('CSVofUsers.csv')
+        users = users.readlines()
 
-        self.user_entity_dict = {}
-        user_entity = open('find_comments.csv')
-        user_entity = user_entity.readlines()
-        self.num = 0
-
-        for element in user_entity:
-            temp = re.findall('\[(.*?)\]', element)
-            match = re.findall('"(.*?)"', temp[0])
-            user = match[0]
-            self.user_entity_dict[user] = match[1]
-        print(self.user_entity_dict)
+        for user in users:
+            user_list.append(user)
 
     def mapper(self, _, line):
-
+        #get/clean user and comment from data/small_new_data.csv
         user_comment = line.split(',')
-        user = re.findall(r'"(.*)', user_comment[0])[0]
-        comment = line[1]
+        user_comment = str(user_comment)
+        user_comment.strip()[1:len(user_comment)-1]
+        user_comment.strip()[1:len(user_comment)-1].split(",")
+        temp = re.findall('\[(.*?)\]', user_comment)
+        match = re.findall('"(.*?)"', temp[0])  
+        comment = match[1]
+        user = match[0]
+
+        #check if user is in self.user_list
+        #if so, yield user and comment
         doc = nlp(comment)
-        if user in self.user_entity_dict.values():
-            if entity in [ent.text for ent in doc.ents]:
-                yield user, comment
-    def combiner(self, key, value):
+        if user in self.user_list:
+            yield user, comment
+    def combiner(self, user, comment):
         yield user, comment
 
-    def reducer(self, user, count):
-
+    def reducer(self, user, comment):
+        print((user,comment))
         yield user, comment
 
 if __name__ == '__main__':
