@@ -11,7 +11,12 @@ import matplotlib.pyplot as plt
 from scipy import linalg, optimize, sparse
 import ast
 
-#nlp = spacy.load('en')
+
+'''
+main, CSVtoList, and get comments are not used anymore because their functions
+were switched to MRFunctions instead. They are kept because they outline the idea
+of how the MRJob for those tasks are run.
+'''
 
 def main(csv_filename, active_filename):
 
@@ -115,7 +120,10 @@ def make_comment_pairs(all_sentences_filename):
                         writer.writerow([[comment1[0], comment1[1]] + comment1[2] + [comment2[0], comment2[1]] +  comment2[2]])
 
 def find_matrix_size(csv_filename):
-
+    '''
+    Give the csv that gives the information of the matrix to be made, the function
+    returns the size of the matrix needed for initialization. 
+    '''
     matrix_size = 0
 
     matrix_csv = open(csv_filename)
@@ -133,7 +141,11 @@ def find_matrix_size(csv_filename):
 
 
 def matrix_maker(csv_filename):
-
+    '''
+    Given the matrix information csv, this function returns a sparse matrix which is
+    user by user, and the value is the similarity score that the users have with
+    each other.
+    ''' 
     user_index_dict = {}
     matrix_size = find_matrix_size(csv_filename)
     matrix = sparse.dok_matrix((matrix_size, matrix_size))
