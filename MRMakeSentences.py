@@ -5,23 +5,26 @@ import csv
 import spacy
 import re
 import numpy as np
-#python3 taskx.py csvfile > newcsvfilename
+
+
 nlp = spacy.load('en')
 
 class MRMakeSentences(MRJob):
     '''
-
+    This file filters the dataset down to comments made by active users as well as turns those comments into vectors to output into the file
+    we do this because running the nlp command on every pair of comments gives us a maximum recursion depth reached error locally.
+    this might not happen in the cloud, but since we didn't get it to wortk, this is what we had to doi.
     ''' 
     def mapper_init(self):
 
-        self.active_user_list = np.zeros(200, dtype=object)
-        active = open('active.csv')
+        self.active_user_list = set()
+        active = open('active_pairs_final.csv')
         active = active.readlines()
 
         for ind, user in enumerate(active):
             user = user.strip()
             user_edit = re.findall(r'"(.*)"', user)
-            self.active_user_list[ind] = user_edit[0]
+            self.active_user_list.add(user_edit[0])
 
         #print(len(self.active_user_list))
 

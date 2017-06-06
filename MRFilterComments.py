@@ -14,16 +14,14 @@ class MRMakeSentences(MRJob):
     ''' 
     def mapper_init(self):
 
-        self.active_user_list = np.zeros(100000, dtype=object)
-        active = open('activeonemb.csv')
+        self.active_user_list = set() #np.zeros(100000, dtype=object)
+        active = open('active_final.csv')
         active = active.readlines()
-
-        self.num = 0
 
         for ind, user in enumerate(active):
             user = user.strip()
-            user_edit = re.findall(r'"\\"(.*)"', user)
-            self.active_user_list[ind] = user_edit[0]
+            user_edit = re.findall(r'"(.*)"', user)
+            self.active_user_list.add(user_edit[0])
 
 
         #print(self.active_user_list)

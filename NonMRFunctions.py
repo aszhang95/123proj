@@ -87,13 +87,12 @@ def make_comment_pairs(all_sentences_filename):
     Returns:
         Csv with this format --> sentence 1, user of sentence 1, vector of sentence 1, sentence 2, user of sentence 2, vector of sentence 2
     '''
-    
-    list_of_comments = []
 
     all_comments = open(all_sentences_filename)
     all_comments = all_comments.readlines()
-
-    for line in all_comments:
+    list_of_comments = len(all_comments) * ['']
+    
+    for ind, line in enumerate(all_comments):
         line = line.split(',')
         user = re.findall(r'"(.*?)"', line[0])[0]
         comment = re.findall(r'"(.*?)"', line[1])[0]
@@ -104,7 +103,7 @@ def make_comment_pairs(all_sentences_filename):
         #print('made it')
         vector = ast.literal_eval(vector)
 
-        list_of_comments.append((user, comment, vector))
+        list_of_comments[ind] = (user, comment, vector)
 
     with open("comment_pairs.csv",'w', newline='') as f:
         writer = csv.writer(f, delimiter = '|')

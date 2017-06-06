@@ -4,6 +4,7 @@ import sys
 import csv
 import json
 import re
+import numpy as np
 #python3 taskx.py csvfile > newcsvfilename
 
 class MRFindActiveUsers(MRJob):
@@ -24,7 +25,7 @@ class MRFindActiveUsers(MRJob):
         yield user, sum(count)
 
     def active_user_reducer(self, user, count):
-        if sum(count) > 0:
+        if sum(count) > 20 and np.random.uniform() > 0.9999:
             yield (user, None)
 
     def steps(self):

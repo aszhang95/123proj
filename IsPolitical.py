@@ -10,25 +10,8 @@ from scipy.sparse import dok_matrix
 from random import randint
 
 NUM_BUCKETS = 10
-'''
-    def mapper_init(self):
-        USERS = dict()
-        USER_INDEX = 0
-        ENTITIES = dict()
-        ENTITY_INDEX = 0
 
-        SCORE_MATRIX = dok_matrix((20000, 100000))
-
-                            if user not in USERS.keys():
-                                USERS[user] = USER_INDEX
-                                USER_INDEX += 1
-
-                            if iden not in entities.keys():
-                                ENTITIES[iden] = ENTITY_INDEX
-                                ENTITY_INDEX += 1
-                            
-                            SCORE_MATRIX[USERS[user], ENTITIES[iden]] += score
-'''
+#This File Does the important work of collecting named entities and sentiment associated with them.
 
 class IsPolitical(MRJob):
 
@@ -38,53 +21,34 @@ class IsPolitical(MRJob):
         self.user_index = 0
         self.entities = dict()
         self.entity_index = 0
-        self.searches = 0
+        self.searches = dict()
         self.comments = 0
 
     def mapper(self, _, line):
-        '''
-        output: entity, boolean (true if political, false if non-political)
-
-        import matplotlib.pyplot as plt
-        import numpy as np
-        x = np.arange(3)
-        plt.bar(x, height= [1,2,3])
-        plt.xticks(x, ['a','b','c'])
-        plt.show()
-        '''
-        #print('heloooooo')
-        # data = json.loads(line)
         self.comments += 1
 
-        print(type(line))
+        #parse line
         line_len = len(line)
         line = line[1:line_len-1]
         parts = line.split(',')
-        user = re.findall(r'"(.*?)"', parts[0])[0]
-        print(user)
+        user = parts[0]
 
-        #print ("helooo")
-
-        # user = data["author"]
         if user != "[deleted]":
-            #print ("hi")
 
-            # comment = data["body"]
             comment = parts[1][1:len(parts[1])-1]
-            print(comment)
 
-            sentiments = sentiment(comment)
+            #get entities and sentiments associated with them
+            sentiments = sentiment(comment, self.searches, False)
 
             if sentiments:
 
-                #print ("hello")
-                for iden, is_political, score in sentiments:
-                    self.searches += 1
-                    print('{} searches'.format(self.searches))
+                for text, iden, is_political, score in sentiments:
+                    #recording searches so as not to do redundant searches
+                    self.searches[text] = (iden, is_political)
                     if score:
 
                         if is_political:
-
+                            #keeping track of users and entities
                             if user not in self.users:
                                 self.users[user] = self.user_index
                                 self.user_index += 1
@@ -93,15 +57,16 @@ class IsPolitical(MRJob):
                                 self.entities[iden] = self.entity_index
                                 self.entity_index += 1
 
-
+                            #yield for matrix data (Hypothesis 2)
                             yield (user, self.users[user], iden, self.entities[iden]), score
 
 
-
+                        #yield for polarization data (Hypothesis 1)
                         yield is_political, score
 
     def combiner(self, key, value):
         scores = value
+
         if type(key) == bool:
             is_political = key
             sum_ex = 0
@@ -125,6 +90,8 @@ class IsPolitical(MRJob):
     def reducer(self, key, value):
         if type(key) == bool:
             is_political = key
+
+            #algorithm for parallel calculation of variance is here:  https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Na.C3.AFve_algorithm
             ex_ex2_n_heights = value
             sum_ex = 0
             sum_ex2 = 0
@@ -143,10 +110,14 @@ class IsPolitical(MRJob):
     
 
     def reducer_stddev(self, key, value):
+
+
         if type(key) == bool:
             is_political = key
             sum_ex, sum_ex2, n, sum_heights = next(value)
             mean = sum_ex / n
+
+            #making a histogram of sentiment
             x = np.arange(NUM_BUCKETS + 1)
             plt.bar(x, height = sum_heights)
             locs = np.arange(0,NUM_BUCKETS,NUM_BUCKETS/10)
@@ -160,6 +131,7 @@ class IsPolitical(MRJob):
             plt.title(title)
             plt.show()
             yield is_political, ((sum_ex2 - ((sum_ex) ** 2) / n) / n, n)
+            
         else:
             yield key, value
 
@@ -172,7 +144,7 @@ class IsPolitical(MRJob):
                  reducer=self.reducer),
           MRStep(reducer=self.reducer_stddev)]
 
-        #https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Na.C3.AFve_algorithm
+
 
 
 if __name__ == '__main__':
