@@ -20,10 +20,3 @@ Make COmment pairs
 matrixcsvmaker.py turns comment pairs into data for matrix via dot products
 makes the matrix:
 matrix_maker('matrixinfo.csv')
-
-
-contributors:
-Angela Zhang
-Amanda Li 
-Steven Wei
-Siddarth Sachdeva
